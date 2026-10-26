@@ -1,0 +1,273 @@
+{
+  "timestamp": "2026-10-26T01:47:19.863Z",
+  "corpusRecords": 101,
+  "scope": "Hand-labelled synthetic vocabulary queries, fixed fixtures; not a production relevance study or a held-out user dataset.",
+  "overall": {
+    "queries": 20,
+    "baselineMRR": 0.525,
+    "rankedMRR": 1,
+    "recallAt5": 1
+  },
+  "cohorts": {
+    "prefix": {
+      "queries": 8,
+      "baselineMRR": 0.8125,
+      "rankedMRR": 1,
+      "recallAt5": 1
+    },
+    "word": {
+      "queries": 2,
+      "baselineMRR": 1,
+      "rankedMRR": 1,
+      "recallAt5": 1
+    },
+    "exact": {
+      "queries": 2,
+      "baselineMRR": 1,
+      "rankedMRR": 1,
+      "recallAt5": 1
+    },
+    "typo": {
+      "queries": 8,
+      "baselineMRR": 0,
+      "rankedMRR": 1,
+      "recallAt5": 1
+    }
+  },
+  "noMatchAccuracy": 1,
+  "rows": [
+    {
+      "query": "react",
+      "expected": "React",
+      "cohort": "prefix",
+      "baselineReciprocalRank": 1,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["React", "React Router", "React Native"]
+    },
+    {
+      "query": "mongo",
+      "expected": "MongoDB",
+      "cohort": "prefix",
+      "baselineReciprocalRank": 1,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["MongoDB", "MongoDB Indexes"]
+    },
+    {
+      "query": "data",
+      "expected": "Data Pipeline",
+      "cohort": "word",
+      "baselineReciprocalRank": 1,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["Data Pipeline", "Data Lineage", "Database Replication"]
+    },
+    {
+      "query": "cache",
+      "expected": "LRU Cache",
+      "cohort": "word",
+      "baselineReciprocalRank": 1,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["LRU Cache", "TTL Cache"]
+    },
+    {
+      "query": "node",
+      "expected": "Node.js",
+      "cohort": "prefix",
+      "baselineReciprocalRank": 1,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["Node.js"]
+    },
+    {
+      "query": "py",
+      "expected": "Python",
+      "cohort": "prefix",
+      "baselineReciprocalRank": 1,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["Python"]
+    },
+    {
+      "query": "java",
+      "expected": "Java",
+      "cohort": "prefix",
+      "baselineReciprocalRank": 0.5,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["Java", "JavaScript"]
+    },
+    {
+      "query": "sql",
+      "expected": "SQL",
+      "cohort": "exact",
+      "baselineReciprocalRank": 1,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["SQL"]
+    },
+    {
+      "query": "api",
+      "expected": "API Gateway",
+      "cohort": "prefix",
+      "baselineReciprocalRank": 0.5,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["API Gateway", "REST API"]
+    },
+    {
+      "query": "docker",
+      "expected": "Docker",
+      "cohort": "exact",
+      "baselineReciprocalRank": 1,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["Docker"]
+    },
+    {
+      "query": "type",
+      "expected": "TypeScript",
+      "cohort": "prefix",
+      "baselineReciprocalRank": 1,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["TypeScript"]
+    },
+    {
+      "query": "index",
+      "expected": "Index Optimization",
+      "cohort": "prefix",
+      "baselineReciprocalRank": 0.5,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "prefix",
+      "returned": ["Index Optimization", "MongoDB Indexes"]
+    },
+    {
+      "query": "reaxt",
+      "expected": "React",
+      "cohort": "typo",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "typo-fallback",
+      "returned": ["React", "React Router", "React Native"]
+    },
+    {
+      "query": "monog",
+      "expected": "MongoDB",
+      "cohort": "typo",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "typo-fallback",
+      "returned": ["MongoDB", "MongoDB Indexes"]
+    },
+    {
+      "query": "cahce",
+      "expected": "LRU Cache",
+      "cohort": "typo",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "typo-fallback",
+      "returned": ["LRU Cache", "TTL Cache"]
+    },
+    {
+      "query": "pyhton",
+      "expected": "Python",
+      "cohort": "typo",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "typo-fallback",
+      "returned": ["Python"]
+    },
+    {
+      "query": "javascrpit",
+      "expected": "JavaScript",
+      "cohort": "typo",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "typo-fallback",
+      "returned": ["JavaScript"]
+    },
+    {
+      "query": "dokcer",
+      "expected": "Docker",
+      "cohort": "typo",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "typo-fallback",
+      "returned": ["Docker"]
+    },
+    {
+      "query": "kubernetse",
+      "expected": "Kubernetes",
+      "cohort": "typo",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "typo-fallback",
+      "returned": ["Kubernetes"]
+    },
+    {
+      "query": "typscript",
+      "expected": "TypeScript",
+      "cohort": "typo",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 1,
+      "recalledAt5": true,
+      "strategy": "typo-fallback",
+      "returned": ["TypeScript"]
+    },
+    {
+      "query": "zzzzzz",
+      "expected": null,
+      "cohort": "no-match",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 0,
+      "recalledAt5": false,
+      "noMatchCorrect": true,
+      "strategy": "typo-fallback",
+      "returned": []
+    },
+    {
+      "query": "quantum banana toast",
+      "expected": null,
+      "cohort": "no-match",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 0,
+      "recalledAt5": false,
+      "noMatchCorrect": true,
+      "strategy": "typo-fallback",
+      "returned": []
+    },
+    {
+      "query": "unfindablexyz",
+      "expected": null,
+      "cohort": "no-match",
+      "baselineReciprocalRank": 0,
+      "reciprocalRank": 0,
+      "recalledAt5": false,
+      "noMatchCorrect": true,
+      "strategy": "typo-fallback",
+      "returned": []
+    }
+  ]
+}

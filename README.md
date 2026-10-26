@@ -1,8 +1,12 @@
 # Typeahead · Low-Latency Autocomplete Service
 
-A full-stack autocomplete project built with **React, Node.js, and MongoDB**. Search a curated software-engineering vocabulary with ranked suggestions, keyboard navigation, a bounded TTL/LRU cache, and per-request timing.
+A full-stack autocomplete project built with **React, Node.js, and MongoDB**. Search a curated software-engineering vocabulary with indexed typo recovery, explainable ranking, bounded caching, Prometheus metrics, and reproducible scale tests.
+
+Try **`reaxt` → React**, toggle **Allow one typo**, and open **Explain this search** to inspect the result.
 
 ![Autocomplete interface](docs/preview.png)
+
+[See the ranking inspector](docs/inspector.png) · [Read the design decisions](docs/DESIGN.md) · [Inspect benchmark evidence](BENCHMARKS.md)
 
 ## Run locally
 
@@ -41,9 +45,12 @@ The Node server serves the compiled React app and API on port 3001. It binds to 
 GET /api/suggest?q=react&limit=8
 GET /api/suggest?q=reaxt&fuzzy=true
 GET /api/health
+GET /api/metrics
 ```
 
 Suggestion responses include `query`, `items` (`id`, `label`, `category`, `score`), `cache` (`hit`, `miss`, `coalesced`, or `none`), `search` (strategy, candidate count, retrieval and ranking timing), `durationMs`, and `storage`. `Server-Timing` exposes server search duration. The UI separately measures HTTP round trip; neither number includes the 100 ms debounce or React paint. Empty input returns no suggestions. Limits are integers 1–10; normalized queries cap at 64 characters. Invalid input returns 400, saturation returns 503, and database errors return a safe 500 response.
+
+`/api/metrics` exposes Prometheus text with fixed-cardinality counters, gauges, and server-duration buckets. It records no query text or user identifiers. Metrics and cache are per process.
 
 ## How it works
 
@@ -53,7 +60,10 @@ flowchart LR
     B --> C[Normalize + validate]
     C --> D[Bounded TTL / LRU cache]
     D -->|miss, coalesce duplicate work| E[MongoDB prefix lookup]
-    E --> F[Rank bounded candidate set]
+    E -->|no prefix matches| G[Indexed deletion signatures]
+    G --> H[Verify at most 100 one-edit candidates]
+    H --> F[Explainable ranking]
+    E --> F
     F --> D
     D --> A
 ```
@@ -67,6 +77,8 @@ flowchart LR
 - **Frontend:** Accessible combobox/listbox semantics, arrows/Enter/Escape, mouse selection, empty/error states, cancellation, and a generation guard that prevents stale responses from replacing newer suggestions.
 - **Data:** Original, small software-engineering vocabulary in `server/data.js`. Seeding uses idempotent upserts; run it explicitly before serving. There is no public write endpoint. Seed updates may take up to the cache TTL to appear in a running service.
 
+See [design decisions and tradeoffs](docs/DESIGN.md) for candidate truncation, index growth, Unicode limits, shared-work cancellation, and deployment considerations.
+
 ## Verify
 
 ```sh
@@ -75,11 +87,14 @@ npm run test:coverage
 npm run build
 npm run evaluate
 npm run benchmark
+npm run benchmark:scale
 ```
 
-Tests cover ranking, normalization, TTL and eviction, coalescing, overload, single-edit typo recovery, candidate-budget exact-match recovery, API validation, database failure paths, real MongoDB persistence and index plans, and UI interactions and stale requests. MongoDB integration tests and the default benchmark start a disposable **real mongod process** using `mongodb-memory-server`; its first run downloads the MongoDB binary. It is not a mocked database. CI runs tests, coverage, production build, and ranking evaluation.
+Tests cover ranking, normalization, TTL and eviction, coalescing, overload, single-edit typo recovery, candidate-budget exact-match recovery, API validation, database failure paths, real MongoDB persistence and index plans, and UI interactions and stale requests. MongoDB integration tests and the default benchmark start a disposable **real mongod process** using `mongodb-memory-server`; its first run downloads the MongoDB binary. It is not a mocked database. CI runs tests, coverage, production build, ranking regression gates, and a 1,000-record scale smoke test.
 
 The benchmark compares the **same indexed MongoDB API** with cache disabled and enabled. Both runs use the same query mix, warmup, concurrency, and duration. `benchmark-results.json` records machine metadata, corpus size, throughput, mean and percentile latency, errors, and the observed latency difference. Override `BENCH_SECONDS` and `BENCH_CONNECTIONS` to change the workload. Set `MONGODB_URI` in the shell to benchmark your own server; it uses a separate `autocomplete_benchmark` database.
+
+The scale harness (`npm run benchmark:scale`) seeds **10,000 synthetic records plus the vocabulary** into a disposable MongoDB and forks a separate load-generator process. It runs cached hot-prefix, uncached varied-prefix, and uncached typo workloads with staggered connections, validates response bodies, and records high-resolution p50/p95/p99 timings plus metrics and index plans in `scale-results.json`. Defaults: 20 connections and 5 seconds per scenario. Override `BENCH_RECORDS` (1,000–100,000), `BENCH_SECONDS`, and `BENCH_CONNECTIONS`. `BENCH_ENFORCE_SLO=true` makes a p99 above 150 ms fail the run. Request errors and invalid bodies always fail it. Never points at a caller-supplied database.
 
 ## Performance claims and limitations
 
@@ -87,7 +102,7 @@ Performance goals are 1,000+ requests/sec and sub-150 ms API latency on the docu
 
 Local benchmarks use a small curated corpus on loopback with database, server, and generator on the same machine. Cached hot-query results do not establish cold-query performance, scalability to a large catalog, production end-to-end latency, or behavior on a different machine. The uncached baseline already uses the index; it isolates the cache effect, not a combined cache/index/async improvement.
 
-`npm run evaluate` reports mean reciprocal rank for a small hand-labelled synthetic query set against popularity-only ranking. It is reproducible but does not establish a 20% user relevance improvement. Coverage reports describe exercised lines/branches; they do not replace correctness testing.
+`npm run evaluate` reports MRR and recall@5 by query cohort over 20 hand-labelled positive queries plus three no-match controls. CI fails if an expected answer disappears, an exact match loses first place, or a no-match control produces an answer. The corpus and fixtures are small and synthetic; perfect fixture recall does not establish production relevance. Coverage reports describe exercised lines/branches; they do not replace correctness testing.
 
 ## Project map
 

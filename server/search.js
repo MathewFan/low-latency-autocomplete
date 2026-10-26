@@ -1,4 +1,5 @@
 import { fuzzyMatch, MIN_FUZZY_LENGTH, MAX_FUZZY_LENGTH } from "./fuzzy.js";
+import { Metrics } from "./metrics.js";
 import { performance } from "node:perf_hooks";
 export function normalize(value) {
   return value.normalize("NFKC").toLowerCase().trim().replace(/\s+/g, " ");
@@ -91,21 +92,36 @@ export class LruCache {
 }
 export function createSearch(
   repository,
-  { cache = new LruCache(), cacheEnabled = true, maxPending = 200 } = {},
+  {
+    cache = new LruCache(),
+    cacheEnabled = true,
+    maxPending = 200,
+    metrics = new Metrics(),
+  } = {},
 ) {
   const pending = new Map();
   return async (query, limit, { fuzzy = true } = {}) => {
     const key = JSON.stringify([query, limit, fuzzy]);
     const hit = cacheEnabled ? cache.get(key) : undefined;
-    if (hit !== undefined) return { ...hit, cache: "hit" };
-    if (pending.has(key))
+    metrics.cacheEntries = cache.entries.size;
+    if (hit !== undefined) {
+      metrics.cache.hit++;
+      return { ...hit, cache: "hit" };
+    }
+    if (pending.has(key)) {
+      metrics.cache.coalesced++;
       return { ...(await pending.get(key)), cache: "coalesced" };
-    if (pending.size >= maxPending)
+    }
+    if (pending.size >= maxPending) {
+      metrics.overload++;
       throw Object.assign(new Error("Search capacity reached"), {
         status: 503,
       });
+    }
+    metrics.cache.miss++;
     const work = Promise.resolve().then(async () => {
       const start = performance.now();
+      metrics.backend.prefix++;
       let candidates = await repository.find(query);
       let strategy = "prefix";
       if (
@@ -115,6 +131,7 @@ export function createSearch(
         query.length <= MAX_FUZZY_LENGTH &&
         repository.findFuzzy
       ) {
+        metrics.backend.fuzzy++;
         candidates = await repository.findFuzzy(query);
         strategy = "typo-fallback";
       }
@@ -134,12 +151,18 @@ export function createSearch(
       };
     });
     pending.set(key, work);
+    metrics.inflight = pending.size;
     try {
       const result = await work;
       if (cacheEnabled) cache.set(key, result);
+      metrics.cacheEntries = cache.entries.size;
       return { ...result, cache: "miss" };
+    } catch (error) {
+      metrics.backendErrors++;
+      throw error;
     } finally {
       pending.delete(key);
+      metrics.inflight = pending.size;
     }
   };
 }

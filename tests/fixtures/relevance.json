@@ -1,0 +1,117 @@
+[
+  {
+    "query": "react",
+    "expected": "React",
+    "cohort": "prefix"
+  },
+  {
+    "query": "mongo",
+    "expected": "MongoDB",
+    "cohort": "prefix"
+  },
+  {
+    "query": "data",
+    "expected": "Data Pipeline",
+    "cohort": "word"
+  },
+  {
+    "query": "cache",
+    "expected": "LRU Cache",
+    "cohort": "word"
+  },
+  {
+    "query": "node",
+    "expected": "Node.js",
+    "cohort": "prefix"
+  },
+  {
+    "query": "py",
+    "expected": "Python",
+    "cohort": "prefix"
+  },
+  {
+    "query": "java",
+    "expected": "Java",
+    "cohort": "prefix"
+  },
+  {
+    "query": "sql",
+    "expected": "SQL",
+    "cohort": "exact"
+  },
+  {
+    "query": "api",
+    "expected": "API Gateway",
+    "cohort": "prefix"
+  },
+  {
+    "query": "docker",
+    "expected": "Docker",
+    "cohort": "exact"
+  },
+  {
+    "query": "type",
+    "expected": "TypeScript",
+    "cohort": "prefix"
+  },
+  {
+    "query": "index",
+    "expected": "Index Optimization",
+    "cohort": "prefix"
+  },
+  {
+    "query": "reaxt",
+    "expected": "React",
+    "cohort": "typo"
+  },
+  {
+    "query": "monog",
+    "expected": "MongoDB",
+    "cohort": "typo"
+  },
+  {
+    "query": "cahce",
+    "expected": "LRU Cache",
+    "cohort": "typo"
+  },
+  {
+    "query": "pyhton",
+    "expected": "Python",
+    "cohort": "typo"
+  },
+  {
+    "query": "javascrpit",
+    "expected": "JavaScript",
+    "cohort": "typo"
+  },
+  {
+    "query": "dokcer",
+    "expected": "Docker",
+    "cohort": "typo"
+  },
+  {
+    "query": "kubernetse",
+    "expected": "Kubernetes",
+    "cohort": "typo"
+  },
+  {
+    "query": "typscript",
+    "expected": "TypeScript",
+    "cohort": "typo"
+  },
+  {
+    "query": "zzzzzz",
+    "expected": null,
+    "cohort": "no-match"
+  },
+  {
+    "query": "quantum banana toast",
+    "expected": null,
+    "cohort": "no-match"
+  },
+  {
+    "query": "unfindablexyz",
+    "expected": null,
+    "cohort": "no-match"
+  }
+]

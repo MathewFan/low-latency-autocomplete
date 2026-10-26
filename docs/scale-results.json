@@ -1,0 +1,333 @@
+{
+  "timestamp": "2026-10-26T01:48:04.867Z",
+  "revision": "working-tree",
+  "node": "v26.8.1",
+  "cpu": "Apple M5",
+  "platform": "darwin arm64",
+  "records": 10101,
+  "durationSeconds": 5,
+  "connections": 20,
+  "topology": "Separate Node load-generator process; API and real MongoDB on same machine, loopback HTTP. Synthetic corpus; no production SLA.",
+  "runs": [
+    {
+      "name": "hot-prefix",
+      "cacheEnabled": true,
+      "requestsPerSecond": 64316.8,
+      "totalRequests": 321616,
+      "latencyMs": {
+        "mean": 0.3050054404258495,
+        "p50": 0.266239,
+        "p95": 0.536063,
+        "p99": 0.626687
+      },
+      "errors": 0,
+      "timeouts": 0,
+      "non2xx": 0,
+      "invalidResponses": 0,
+      "p99Within150ms": true,
+      "metrics": "# HELP autocomplete_requests_total Suggestion HTTP requests by outcome.\n# TYPE autocomplete_requests_total counter\nautocomplete_requests_total{outcome=\"success\"} 321641\nautocomplete_requests_total{outcome=\"invalid\"} 0\nautocomplete_requests_total{outcome=\"failure\"} 0\n# HELP autocomplete_cache_total Search cache decisions.\n# TYPE autocomplete_cache_total counter\nautocomplete_cache_total{result=\"hit\"} 321636\nautocomplete_cache_total{result=\"miss\"} 5\nautocomplete_cache_total{result=\"coalesced\"} 0\n# HELP autocomplete_backend_total Repository retrieval calls, not MongoDB wire commands.\n# TYPE autocomplete_backend_total counter\nautocomplete_backend_total{operation=\"prefix\"} 5\nautocomplete_backend_total{operation=\"fuzzy\"} 0\n# HELP autocomplete_overload_total Rejected distinct searches at capacity.\n# TYPE autocomplete_overload_total counter\nautocomplete_overload_total 0\n# HELP autocomplete_backend_errors_total Failed retrieval or ranking operations.\n# TYPE autocomplete_backend_errors_total counter\nautocomplete_backend_errors_total 0\n# HELP autocomplete_inflight Distinct searches currently in flight.\n# TYPE autocomplete_inflight gauge\nautocomplete_inflight 0\n# HELP autocomplete_cache_entries Resident cache entries including expired entries not yet accessed.\n# TYPE autocomplete_cache_entries gauge\nautocomplete_cache_entries 5\n# HELP autocomplete_http_duration_seconds Server handling duration of suggestion requests.\n# TYPE autocomplete_http_duration_seconds histogram\nautocomplete_http_duration_seconds_bucket{le=\"0.001\"} 321639\nautocomplete_http_duration_seconds_bucket{le=\"0.005\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"0.01\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"0.025\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"0.05\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"0.1\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"0.25\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"0.5\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"1\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"2\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"5\"} 321641\nautocomplete_http_duration_seconds_bucket{le=\"+Inf\"} 321641\nautocomplete_http_duration_seconds_sum 3.225999486999528\nautocomplete_http_duration_seconds_count 321641\n"
+    },
+    {
+      "name": "varied-prefix",
+      "cacheEnabled": false,
+      "requestsPerSecond": 37032,
+      "totalRequests": 185182,
+      "latencyMs": {
+        "mean": 0.5348884473004936,
+        "p50": 0.489471,
+        "p95": 0.853503,
+        "p99": 1.225727
+      },
+      "errors": 0,
+      "timeouts": 0,
+      "non2xx": 0,
+      "invalidResponses": 0,
+      "p99Within150ms": true,
+      "metrics": "# HELP autocomplete_requests_total Suggestion HTTP requests by outcome.\n# TYPE autocomplete_requests_total counter\nautocomplete_requests_total{outcome=\"success\"} 185207\nautocomplete_requests_total{outcome=\"invalid\"} 0\nautocomplete_requests_total{outcome=\"failure\"} 0\n# HELP autocomplete_cache_total Search cache decisions.\n# TYPE autocomplete_cache_total counter\nautocomplete_cache_total{result=\"hit\"} 0\nautocomplete_cache_total{result=\"miss\"} 60450\nautocomplete_cache_total{result=\"coalesced\"} 124757\n# HELP autocomplete_backend_total Repository retrieval calls, not MongoDB wire commands.\n# TYPE autocomplete_backend_total counter\nautocomplete_backend_total{operation=\"prefix\"} 60450\nautocomplete_backend_total{operation=\"fuzzy\"} 0\n# HELP autocomplete_overload_total Rejected distinct searches at capacity.\n# TYPE autocomplete_overload_total counter\nautocomplete_overload_total 0\n# HELP autocomplete_backend_errors_total Failed retrieval or ranking operations.\n# TYPE autocomplete_backend_errors_total counter\nautocomplete_backend_errors_total 0\n# HELP autocomplete_inflight Distinct searches currently in flight.\n# TYPE autocomplete_inflight gauge\nautocomplete_inflight 0\n# HELP autocomplete_cache_entries Resident cache entries including expired entries not yet accessed.\n# TYPE autocomplete_cache_entries gauge\nautocomplete_cache_entries 0\n# HELP autocomplete_http_duration_seconds Server handling duration of suggestion requests.\n# TYPE autocomplete_http_duration_seconds histogram\nautocomplete_http_duration_seconds_bucket{le=\"0.001\"} 184849\nautocomplete_http_duration_seconds_bucket{le=\"0.005\"} 185203\nautocomplete_http_duration_seconds_bucket{le=\"0.01\"} 185207\nautocomplete_http_duration_seconds_bucket{le=\"0.025\"} 185207\nautocomplete_http_duration_seconds_bucket{le=\"0.05\"} 185207\nautocomplete_http_duration_seconds_bucket{le=\"0.1\"} 185207\nautocomplete_http_duration_seconds_bucket{le=\"0.25\"} 185207\nautocomplete_http_duration_seconds_bucket{le=\"0.5\"} 185207\nautocomplete_http_duration_seconds_bucket{le=\"1\"} 185207\nautocomplete_http_duration_seconds_bucket{le=\"2\"} 185207\nautocomplete_http_duration_seconds_bucket{le=\"5\"} 185207\nautocomplete_http_duration_seconds_bucket{le=\"+Inf\"} 185207\nautocomplete_http_duration_seconds_sum 45.40094098100077\nautocomplete_http_duration_seconds_count 185207\n"
+    },
+    {
+      "name": "typo-fallback",
+      "cacheEnabled": false,
+      "requestsPerSecond": 41852.81,
+      "totalRequests": 209254,
+      "latencyMs": {
+        "mean": 0.4721685007502843,
+        "p50": 0.436223,
+        "p95": 0.700927,
+        "p99": 1.019903
+      },
+      "errors": 0,
+      "timeouts": 0,
+      "non2xx": 0,
+      "invalidResponses": 0,
+      "p99Within150ms": true,
+      "metrics": "# HELP autocomplete_requests_total Suggestion HTTP requests by outcome.\n# TYPE autocomplete_requests_total counter\nautocomplete_requests_total{outcome=\"success\"} 209277\nautocomplete_requests_total{outcome=\"invalid\"} 0\nautocomplete_requests_total{outcome=\"failure\"} 0\n# HELP autocomplete_cache_total Search cache decisions.\n# TYPE autocomplete_cache_total counter\nautocomplete_cache_total{result=\"hit\"} 0\nautocomplete_cache_total{result=\"miss\"} 15858\nautocomplete_cache_total{result=\"coalesced\"} 193419\n# HELP autocomplete_backend_total Repository retrieval calls, not MongoDB wire commands.\n# TYPE autocomplete_backend_total counter\nautocomplete_backend_total{operation=\"prefix\"} 15858\nautocomplete_backend_total{operation=\"fuzzy\"} 15858\n# HELP autocomplete_overload_total Rejected distinct searches at capacity.\n# TYPE autocomplete_overload_total counter\nautocomplete_overload_total 0\n# HELP autocomplete_backend_errors_total Failed retrieval or ranking operations.\n# TYPE autocomplete_backend_errors_total counter\nautocomplete_backend_errors_total 0\n# HELP autocomplete_inflight Distinct searches currently in flight.\n# TYPE autocomplete_inflight gauge\nautocomplete_inflight 0\n# HELP autocomplete_cache_entries Resident cache entries including expired entries not yet accessed.\n# TYPE autocomplete_cache_entries gauge\nautocomplete_cache_entries 0\n# HELP autocomplete_http_duration_seconds Server handling duration of suggestion requests.\n# TYPE autocomplete_http_duration_seconds histogram\nautocomplete_http_duration_seconds_bucket{le=\"0.001\"} 208613\nautocomplete_http_duration_seconds_bucket{le=\"0.005\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"0.01\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"0.025\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"0.05\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"0.1\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"0.25\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"0.5\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"1\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"2\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"5\"} 209277\nautocomplete_http_duration_seconds_bucket{le=\"+Inf\"} 209277\nautocomplete_http_duration_seconds_sum 69.6872675249991\nautocomplete_http_duration_seconds_count 209277\n"
+    }
+  ],
+  "plans": {
+    "prefix": {
+      "winningPlan": {
+        "stage": "LIMIT",
+        "limitAmount": 200,
+        "inputStage": {
+          "stage": "FETCH",
+          "inputStage": {
+            "stage": "IXSCAN",
+            "keyPattern": {
+              "prefixes": 1,
+              "popularity": -1,
+              "id": 1
+            },
+            "indexName": "prefix_popularity",
+            "isMultiKey": true,
+            "multiKeyPaths": {
+              "prefixes": [
+                "prefixes"
+              ],
+              "popularity": [],
+              "id": []
+            },
+            "isUnique": false,
+            "isSparse": false,
+            "isPartial": false,
+            "indexVersion": 2,
+            "direction": "forward",
+            "indexBounds": {
+              "prefixes": [
+                "[\"service 000\", \"service 000\"]"
+              ],
+              "popularity": [
+                "[MaxKey, MinKey]"
+              ],
+              "id": [
+                "[MinKey, MaxKey]"
+              ]
+            }
+          }
+        }
+      },
+      "documentsExamined": 100,
+      "keysExamined": 100,
+      "returned": 100
+    },
+    "fuzzy": {
+      "winningPlan": {
+        "stage": "LIMIT",
+        "limitAmount": 100,
+        "inputStage": {
+          "stage": "FETCH",
+          "inputStage": {
+            "stage": "SORT_MERGE",
+            "sortPattern": {
+              "popularity": -1,
+              "id": 1
+            },
+            "inputStages": [
+              {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "fuzzyKeys": 1,
+                  "popularity": -1,
+                  "id": 1
+                },
+                "indexName": "fuzzy_candidates",
+                "isMultiKey": true,
+                "multiKeyPaths": {
+                  "fuzzyKeys": [
+                    "fuzzyKeys"
+                  ],
+                  "popularity": [],
+                  "id": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "fuzzyKeys": [
+                    "[\"eaxt\", \"eaxt\"]"
+                  ],
+                  "popularity": [
+                    "[MaxKey, MinKey]"
+                  ],
+                  "id": [
+                    "[MinKey, MaxKey]"
+                  ]
+                }
+              },
+              {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "fuzzyKeys": 1,
+                  "popularity": -1,
+                  "id": 1
+                },
+                "indexName": "fuzzy_candidates",
+                "isMultiKey": true,
+                "multiKeyPaths": {
+                  "fuzzyKeys": [
+                    "fuzzyKeys"
+                  ],
+                  "popularity": [],
+                  "id": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "fuzzyKeys": [
+                    "[\"raxt\", \"raxt\"]"
+                  ],
+                  "popularity": [
+                    "[MaxKey, MinKey]"
+                  ],
+                  "id": [
+                    "[MinKey, MaxKey]"
+                  ]
+                }
+              },
+              {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "fuzzyKeys": 1,
+                  "popularity": -1,
+                  "id": 1
+                },
+                "indexName": "fuzzy_candidates",
+                "isMultiKey": true,
+                "multiKeyPaths": {
+                  "fuzzyKeys": [
+                    "fuzzyKeys"
+                  ],
+                  "popularity": [],
+                  "id": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "fuzzyKeys": [
+                    "[\"reat\", \"reat\"]"
+                  ],
+                  "popularity": [
+                    "[MaxKey, MinKey]"
+                  ],
+                  "id": [
+                    "[MinKey, MaxKey]"
+                  ]
+                }
+              },
+              {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "fuzzyKeys": 1,
+                  "popularity": -1,
+                  "id": 1
+                },
+                "indexName": "fuzzy_candidates",
+                "isMultiKey": true,
+                "multiKeyPaths": {
+                  "fuzzyKeys": [
+                    "fuzzyKeys"
+                  ],
+                  "popularity": [],
+                  "id": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "fuzzyKeys": [
+                    "[\"reax\", \"reax\"]"
+                  ],
+                  "popularity": [
+                    "[MaxKey, MinKey]"
+                  ],
+                  "id": [
+                    "[MinKey, MaxKey]"
+                  ]
+                }
+              },
+              {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "fuzzyKeys": 1,
+                  "popularity": -1,
+                  "id": 1
+                },
+                "indexName": "fuzzy_candidates",
+                "isMultiKey": true,
+                "multiKeyPaths": {
+                  "fuzzyKeys": [
+                    "fuzzyKeys"
+                  ],
+                  "popularity": [],
+                  "id": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "fuzzyKeys": [
+                    "[\"reaxt\", \"reaxt\"]"
+                  ],
+                  "popularity": [
+                    "[MaxKey, MinKey]"
+                  ],
+                  "id": [
+                    "[MinKey, MaxKey]"
+                  ]
+                }
+              },
+              {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "fuzzyKeys": 1,
+                  "popularity": -1,
+                  "id": 1
+                },
+                "indexName": "fuzzy_candidates",
+                "isMultiKey": true,
+                "multiKeyPaths": {
+                  "fuzzyKeys": [
+                    "fuzzyKeys"
+                  ],
+                  "popularity": [],
+                  "id": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "fuzzyKeys": [
+                    "[\"rext\", \"rext\"]"
+                  ],
+                  "popularity": [
+                    "[MaxKey, MinKey]"
+                  ],
+                  "id": [
+                    "[MinKey, MaxKey]"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "documentsExamined": 3,
+      "keysExamined": 3,
+      "returned": 3
+    }
+  }
+}

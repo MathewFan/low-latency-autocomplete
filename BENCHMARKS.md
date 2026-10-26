@@ -1,42 +1,55 @@
-# Measured local results
+# Measured results
 
-Recorded 2026-10-26T01:30:51.856Z. One illustrative run, not a production SLA.
+## Current scale workload
 
-## Environment and workload
+Recorded 2026-10-26T01:48:04.867Z, after the typo-recovery and inspector changes with metrics instrumentation. One local run on Apple M5 / darwin arm64 / Node v26.8.1.
 
-- Apple M5; darwin arm64; Node v26.8.1.
-- 101 original curated vocabulary records, 12 repeated prefix queries.
-- 30 HTTP connections, 10 seconds per scenario, HTTP/1.1 without pipelining.
-- Client, Express API, and a disposable real MongoDB server on the same machine over loopback.
-- Each scenario is warmed up. Cache-disabled baseline retains in-flight coalescing and the MongoDB index.
-- Response bodies are checked for valid MongoDB suggestion results; database calls are counted.
+**10,101 records** (10,000 deterministic synthetic service names plus 101 curated terms), **20 connections**, **5 seconds per scenario**. The load generator runs in a separate Node process. API, generator, and real MongoDB still share a machine and loopback network. Client sequences are staggered to reduce artificial synchronization.
 
-| Metric                                       | Indexed, cache disabled | Indexed, warm cache |
-| -------------------------------------------- | ----------------------: | ------------------: |
-| Requests/sec                                 |               41,174.55 |           38,698.19 |
-| HTTP mean, ms                                |                   0.725 |               0.771 |
-| HTTP p95, ms                                 |                   0.915 |               0.864 |
-| HTTP p99, ms                                 |                   1.206 |               1.018 |
-| Database lookups during load                 |                  32,262 |                   0 |
-| Errors / timeouts / non-2xx / invalid bodies |           0 / 0 / 0 / 0 |       0 / 0 / 0 / 0 |
+| Workload      | Requests/sec | Mean ms | p95 ms | p99 ms | Cache misses* | Coalesced requests* |
+| ------------- | -----------: | ------: | -----: | -----: | ------------: | ------------------: |
+| hot-prefix    |       64,317 |   0.305 |  0.536 |  0.627 |             5 |                   0 |
+| varied-prefix |       37,032 |   0.535 |  0.854 |  1.226 |        60,450 |             124,757 |
+| typo-fallback |       41,853 |   0.472 |  0.701 |  1.020 |        15,858 |             193,419 |
 
-Mean latency reduction: **-6.37%** (negative means the cached run was slower). This run does **not** establish a 40% latency improvement. The workload is so small that shared-process load-generator overhead and coalescing dominate; caching demonstrably reduces database traffic. Repeated runs, a separate load generator, a realistic corpus, and a production-like network are needed for broader claims.
+All scenarios had **zero errors, timeouts, non-2xx responses, or invalid response bodies**, and p99 below the local 150 ms goal. Only the hot-prefix scenario enables cache. The varied-prefix scenario rotates 250 service queries; typo fallback rotates three misspelled vocabulary queries. These are different workloads, so their numbers do not isolate a cache speedup.
 
-Latency values above use high-resolution per-request client timestamps. Autocannon's built-in millisecond histogram quantizes many sub-millisecond requests to zero, so its mean is not used for percentage calculations. Raw results retain both measurements.
+\* Metrics include a few warmup requests and requests completed while connections drained, so counters may exceed the load generator's timed response count. Coalescing remains enabled in every scenario. A coalesced HTTP request does **not** perform an independent database lookup: HTTP throughput is not database QPS. Short repeated-query trials do not establish production capacity, cold-cache behavior, sustained stability, or large-catalog relevance.
 
-## Ranking evaluation
+Both prefix and fuzzy query plans use an index scan; full winning plans, key/document counts, fixed-label server metrics, and validated request totals are in [the raw scale snapshot](docs/scale-results.json).
 
-A fixed 12-query hand-labelled set yields MRR **0.875** for popularity-only ranking and **1.000** for match-aware ranking: **14.29% relative improvement**. This is a synthetic vocabulary evaluation, not a user relevance study. It does not establish a 20% improvement in user relevance.
+Reproduce with:
+
+```sh
+npm ci
+npm run benchmark:scale
+# Enforce the local latency goal as well as correctness:
+BENCH_ENFORCE_SLO=true npm run benchmark:scale
+```
+
+The harness always uses a disposable database. `BENCH_RECORDS`, `BENCH_SECONDS`, and `BENCH_CONNECTIONS` control fixture size and load. Timing uses Node's bounded-memory high-resolution histogram rather than rounding sub-millisecond samples to zero.
+
+## Ranking regression set
+
+The fixed fixture has 20 positive queries across prefix, word, exact, and typo cohorts, plus three no-match controls. Match-aware ranking achieved MRR **1.000**, recall@5 **100%**, and no-match accuracy **100%** on this set. Popularity-only strict retrieval achieved MRR **0.525**; it has no typo recovery. Comparing these combines retrieval and ranking changes, not a pure reranker improvement.
+
+See [every query and returned result](docs/relevance-results.json) and [the fixture](tests/fixtures/relevance.json). These labels are hand-chosen on a tiny synthetic corpus. Perfect regression scores are not evidence of general production relevance or a user satisfaction improvement. CI gates fixture recall, exact first-place matches, and no-match controls.
 
 ## Verification
 
-32 tests passed, including a real MongoDB index-plan and idempotent-seeding check. Production build passed. Coverage for application modules (excluding server startup and React bootstrap):
+**59 tests passed**, including real MongoDB index plans, exact recovery beyond the candidate budget, one-edit mutations, cache coalescing/backpressure, safe metrics, stale response suppression, retries, and inspector interactions. Production build passed.
 
-| Coverage   | Measured |
-| ---------- | -------: |
-| Lines      |     100% |
-| Statements |     100% |
-| Branches   |   93.05% |
-| Functions  |   96.29% |
+| Coverage (application modules) | Measured |
+| ------------------------------ | -------: |
+| Lines                          |   98.85% |
+| Statements                     |   98.85% |
+| Branches                       |   93.23% |
+| Functions                      |   95.65% |
 
-See [raw benchmark results](docs/benchmark-results.json) and [coverage summary](docs/coverage-summary.json). Reproduce with `npm run benchmark`, `npm run evaluate`, and `npm run test:coverage`. First-run integration checks download an official MongoDB binary. Benchmark output is ignored by Git by default; this recorded snapshot is committed explicitly under docs.
+Startup/bootstrap scripts are excluded; these figures are not coverage for the entire repository. See [coverage snapshot](docs/coverage-summary.json). CI additionally runs a 1,000-record scale smoke test without enforcing shared-runner timing.
+
+## Initial baseline, retained for comparison
+
+The original `ce07ae1` implementation used a 101-record corpus and a same-process generator. Its cache-disabled/cached means were 0.725 / 0.771 ms, so it did **not** demonstrate a 40% latency reduction. Its 12-query ranking set showed a 14.29% relative MRR improvement. Those figures describe that earlier code and fixture, not the current workload. [Original raw results](docs/benchmark-results.json) are retained rather than overwritten.
+
+No claim of a 40% latency reduction or a 20% real-user relevance improvement is made. See [design decisions and limits](docs/DESIGN.md).

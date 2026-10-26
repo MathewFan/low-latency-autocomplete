@@ -14,7 +14,9 @@
     "test": "vitest run --configLoader runner",
     "test:coverage": "vitest run --configLoader runner --coverage",
     "benchmark": "node scripts/benchmark.js",
-    "evaluate": "node scripts/evaluate.js"
+    "evaluate": "node scripts/evaluate.js",
+    "benchmark:scale": "node scripts/benchmark-scale.js",
+    "format": "prettier --write client server scripts tests *.js *.json *.md .github/workflows/*.yml"
   },
   "dependencies": {
     "express": "^5.1.0",

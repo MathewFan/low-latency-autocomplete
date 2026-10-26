@@ -4,8 +4,8 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -13,3 +13,9 @@ jobs:
       - run: npm run test:coverage
       - run: npm run build
       - run: npm run evaluate
+      - name: Scale workload smoke test
+        run: npm run benchmark:scale
+        env:
+          BENCH_RECORDS: 1000
+          BENCH_SECONDS: 1
+          BENCH_CONNECTIONS: 4

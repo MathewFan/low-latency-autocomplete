@@ -1,15 +1,30 @@
 import express from "express";
 import { performance } from "node:perf_hooks";
+import { Metrics } from "./metrics.js";
 import { normalize, createSearch } from "./search.js";
 export function createApp(repository, options = {}) {
   const app = express();
   app.disable("x-powered-by");
-  const search = createSearch(repository, options);
+  const metrics = new Metrics();
+  const search = createSearch(repository, { ...options, metrics });
+  app.get("/api/metrics", (_req, res) => {
+    res.set({
+      "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    res.send(metrics.render());
+  });
   app.get("/api/health", (_req, res) =>
     res.json({ status: "ok", storage: repository.mode }),
   );
   app.get("/api/suggest", async (req, res, next) => {
     const start = performance.now();
+    res.once("finish", () =>
+      metrics.observeRequest(
+        res.statusCode,
+        (performance.now() - start) / 1000,
+      ),
+    );
     if (typeof req.query.q !== "string" || req.query.q.length > 128)
       return res
         .status(400)
