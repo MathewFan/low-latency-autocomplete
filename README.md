@@ -39,10 +39,11 @@ The Node server serves the compiled React app and API on port 3001. It binds to 
 
 ```http
 GET /api/suggest?q=react&limit=8
+GET /api/suggest?q=reaxt&fuzzy=true
 GET /api/health
 ```
 
-Suggestion responses include `query`, `items` (`id`, `label`, `category`, `score`), `cache` (`hit`, `miss`, `coalesced`, or `none`), `durationMs`, and `storage`. `Server-Timing` exposes server search duration. The UI separately measures HTTP round trip; neither number includes the 100 ms debounce or React paint. Empty input returns no suggestions. Limits are integers 1–10; normalized queries cap at 64 characters. Invalid input returns 400, saturation returns 503, and database errors return a safe 500 response.
+Suggestion responses include `query`, `items` (`id`, `label`, `category`, `score`), `cache` (`hit`, `miss`, `coalesced`, or `none`), `search` (strategy, candidate count, retrieval and ranking timing), `durationMs`, and `storage`. `Server-Timing` exposes server search duration. The UI separately measures HTTP round trip; neither number includes the 100 ms debounce or React paint. Empty input returns no suggestions. Limits are integers 1–10; normalized queries cap at 64 characters. Invalid input returns 400, saturation returns 503, and database errors return a safe 500 response.
 
 ## How it works
 
@@ -58,8 +59,9 @@ flowchart LR
 ```
 
 - **Indexed retrieval:** Seeded documents contain normalized phrase and word prefixes. `{ prefixes: 1, popularity: -1, id: 1 }` supports equality on a multikey prefix followed by popularity ordering. Queries never interpolate regex or MongoDB operators from user input. Integration tests check for index scans using `explain()`.
-- **Ranking:** Exact matches score above phrase prefixes, which score above word prefixes. Log popularity and alphabetical ordering break ties. At most 200 popularity-sorted candidates are ranked in application code, keeping work bounded. This can miss rare exact matches in very large catalogs; the current corpus stays below that cap.
-- **Cache:** Up to 1,000 entries, 30-second TTL, query-and-limit keys, LRU eviction, and duplicate in-flight request coalescing. At most 200 distinct misses run concurrently. Failed work is removed so retries work. MongoDB operations have a two-second timeout. Cache is per process; horizontal scaling would need a shared cache or accept reduced hit rates.
+- **Ranking:** Exact matches score above phrase prefixes, which score above word prefixes. Log popularity and alphabetical ordering break ties. At most 200 popularity-sorted prefix candidates plus one indexed exact-match recovery are ranked in application code. Match tiers dominate a bounded popularity boost, even at extreme popularity values. Each result includes a match type, matching prefix, edit distance, and popularity contribution.
+- **Typo recovery:** If strict prefix search returns nothing, 3–24 character queries use a separate MongoDB index of symmetric deletion signatures. At most 100 candidates are verified for a single insertion, deletion, substitution, or adjacent swap. Signature collisions are rejected. This avoids a full-catalog edit-distance scan; candidate truncation can reduce recall. `fuzzy=false` disables fallback. Re-run `npm run seed` after upgrading to populate the new fields and indexes.
+- **Cache:** Up to 1,000 entries, 30-second TTL, query/limit/typo-mode keys, LRU eviction, and duplicate in-flight request coalescing. At most 200 distinct misses run concurrently. Failed work is removed so retries work. MongoDB operations have a two-second timeout. Cache is per process; horizontal scaling would need a shared cache or accept reduced hit rates.
 - **Asynchronous I/O:** MongoDB queries use the Node driver and its connection pool without blocking the event loop. There is no invented background-worker subsystem.
 - **Frontend:** Accessible combobox/listbox semantics, arrows/Enter/Escape, mouse selection, empty/error states, cancellation, and a generation guard that prevents stale responses from replacing newer suggestions.
 - **Data:** Original, small software-engineering vocabulary in `server/data.js`. Seeding uses idempotent upserts; run it explicitly before serving. There is no public write endpoint. Seed updates may take up to the cache TTL to appear in a running service.
@@ -74,7 +76,7 @@ npm run evaluate
 npm run benchmark
 ```
 
-Tests cover ranking, normalization, TTL and eviction, coalescing, overload, API validation, database failure paths, real MongoDB persistence and index plans, and UI interactions and stale requests. MongoDB integration tests and the default benchmark start a disposable **real mongod process** using `mongodb-memory-server`; its first run downloads the MongoDB binary. It is not a mocked database. CI runs tests, coverage, production build, and ranking evaluation.
+Tests cover ranking, normalization, TTL and eviction, coalescing, overload, single-edit typo recovery, candidate-budget exact-match recovery, API validation, database failure paths, real MongoDB persistence and index plans, and UI interactions and stale requests. MongoDB integration tests and the default benchmark start a disposable **real mongod process** using `mongodb-memory-server`; its first run downloads the MongoDB binary. It is not a mocked database. CI runs tests, coverage, production build, and ranking evaluation.
 
 The benchmark compares the **same indexed MongoDB API** with cache disabled and enabled. Both runs use the same query mix, warmup, concurrency, and duration. `benchmark-results.json` records machine metadata, corpus size, throughput, mean and percentile latency, errors, and the observed latency difference. Override `BENCH_SECONDS` and `BENCH_CONNECTIONS` to change the workload. Set `MONGODB_URI` in the shell to benchmark your own server; it uses a separate `autocomplete_benchmark` database.
 

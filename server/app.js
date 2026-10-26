@@ -24,9 +24,16 @@ export function createApp(repository, options = {}) {
       return res
         .status(400)
         .json({ error: "limit must be an integer from 1 to 10" });
+    if (
+      req.query.fuzzy !== undefined &&
+      !["true", "false"].includes(req.query.fuzzy)
+    )
+      return res.status(400).json({ error: "fuzzy must be true or false" });
     try {
       const result = query
-        ? await search(query, Number(rawLimit))
+        ? await search(query, Number(rawLimit), {
+            fuzzy: req.query.fuzzy !== "false",
+          })
         : { items: [], cache: "none" };
       const durationMs = +(performance.now() - start).toFixed(2);
       res.set({

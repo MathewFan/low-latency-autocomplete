@@ -1,3 +1,5 @@
+import { fuzzyMatch, MIN_FUZZY_LENGTH, MAX_FUZZY_LENGTH } from "./fuzzy.js";
+import { performance } from "node:perf_hooks";
 export function normalize(value) {
   return value.normalize("NFKC").toLowerCase().trim().replace(/\s+/g, " ");
 }
@@ -14,19 +16,55 @@ export function prefixesFor(label) {
     ),
   ];
 }
-export function rank(items, query, limit = 8) {
+export function rank(items, query, limit = 8, { fuzzy = false } = {}) {
   return items
     .map((item) => {
       const label = normalize(item.label);
-      const match = label === query ? 3 : label.startsWith(query) ? 2 : 1;
+      const matchType =
+        label === query
+          ? "exact"
+          : label.startsWith(query)
+            ? "phrase-prefix"
+            : label.split(" ").some((word) => word.startsWith(query))
+              ? "word-prefix"
+              : "typo";
+      const matchedPrefix =
+        matchType === "typo"
+          ? fuzzy
+            ? fuzzyMatch(item.label, query)
+            : null
+          : query;
+      if (matchedPrefix === null) return null;
+      const tier = { exact: 3, "phrase-prefix": 2, "word-prefix": 1, typo: 0 }[
+        matchType
+      ];
+      const popularity = Math.max(
+        0,
+        Number.isFinite(item.popularity) ? item.popularity : 0,
+      );
+      // Bounded popularity contribution can never overturn a match tier.
+      const logPopularity = Math.log1p(popularity);
+      const popularityBoost = (25 * logPopularity) / (1 + logPopularity);
       return {
         id: item.id,
         label: item.label,
         category: item.category,
-        score: +(match * 100 + Math.log1p(item.popularity) * 5).toFixed(3),
+        score: +(tier * 100 + popularityBoost).toFixed(3),
+        explanation: {
+          matchType,
+          matchedPrefix,
+          editDistance: matchType === "typo" ? 1 : 0,
+          popularityBoost: +popularityBoost.toFixed(3),
+        },
       };
     })
-    .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label))
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.label.localeCompare(b.label) ||
+        a.id.localeCompare(b.id),
+    )
     .slice(0, limit);
 }
 export class LruCache {
@@ -56,24 +94,50 @@ export function createSearch(
   { cache = new LruCache(), cacheEnabled = true, maxPending = 200 } = {},
 ) {
   const pending = new Map();
-  return async (query, limit) => {
-    const key = JSON.stringify([query, limit]);
+  return async (query, limit, { fuzzy = true } = {}) => {
+    const key = JSON.stringify([query, limit, fuzzy]);
     const hit = cacheEnabled ? cache.get(key) : undefined;
-    if (hit !== undefined) return { items: hit, cache: "hit" };
+    if (hit !== undefined) return { ...hit, cache: "hit" };
     if (pending.has(key))
-      return { items: await pending.get(key), cache: "coalesced" };
+      return { ...(await pending.get(key)), cache: "coalesced" };
     if (pending.size >= maxPending)
       throw Object.assign(new Error("Search capacity reached"), {
         status: 503,
       });
-    const work = Promise.resolve()
-      .then(() => repository.find(query))
-      .then((items) => rank(items, query, limit));
+    const work = Promise.resolve().then(async () => {
+      const start = performance.now();
+      let candidates = await repository.find(query);
+      let strategy = "prefix";
+      if (
+        !candidates.length &&
+        fuzzy &&
+        query.length >= MIN_FUZZY_LENGTH &&
+        query.length <= MAX_FUZZY_LENGTH &&
+        repository.findFuzzy
+      ) {
+        candidates = await repository.findFuzzy(query);
+        strategy = "typo-fallback";
+      }
+      const retrievalMs = +(performance.now() - start).toFixed(3);
+      const rankStart = performance.now();
+      const items = rank(candidates, query, limit, {
+        fuzzy: strategy === "typo-fallback",
+      });
+      return {
+        items,
+        search: {
+          strategy,
+          candidateCount: candidates.length,
+          retrievalMs,
+          rankingMs: +(performance.now() - rankStart).toFixed(3),
+        },
+      };
+    });
     pending.set(key, work);
     try {
-      const items = await work;
-      if (cacheEnabled) cache.set(key, items);
-      return { items, cache: "miss" };
+      const result = await work;
+      if (cacheEnabled) cache.set(key, result);
+      return { ...result, cache: "miss" };
     } finally {
       pending.delete(key);
     }
