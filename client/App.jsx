@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-const examples = ["react", "mongo", "cache", "data"];
+const examples = ["react", "mongo", "cache", "reaxt"];
+const reasons = {
+  exact: "Exact match",
+  "phrase-prefix": "Phrase starts with your query",
+  "word-prefix": "A word starts with your query",
+  typo: "One typo corrected",
+};
 export default function App() {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState([]);
@@ -8,6 +14,9 @@ export default function App() {
   const [status, setStatus] = useState("idle");
   const [meta, setMeta] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [allowTypos, setAllowTypos] = useState(true);
+  const [retry, setRetry] = useState(0);
+  const [trace, setTrace] = useState([]);
   const [storage, setStorage] = useState("checking");
   const generation = useRef(0);
   const input = useRef();
@@ -39,13 +48,22 @@ export default function App() {
       const start = performance.now();
       try {
         const res = await fetch(
-          `/api/suggest?q=${encodeURIComponent(query)}&limit=8`,
+          `/api/suggest?q=${encodeURIComponent(query)}&limit=8&fuzzy=${allowTypos}`,
           { signal: controller.signal },
         );
         if (!res.ok) throw Error("Search unavailable");
         const data = await res.json();
         if (id !== generation.current) return;
         setItems(data.items);
+        if (data.storage) setStorage(data.storage);
+        setTrace((previous) => [
+          ...previous.slice(-7),
+          {
+            query: data.query || query,
+            ms: +(performance.now() - start).toFixed(2),
+            cache: data.cache,
+          },
+        ]);
         setMeta({ ...data, roundTrip: Math.round(performance.now() - start) });
         setStatus("ready");
       } catch (error) {
@@ -57,7 +75,7 @@ export default function App() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query]);
+  }, [query, allowTypos, retry]);
   function choose(item) {
     setSelected(item);
     setOpen(false);
@@ -101,7 +119,7 @@ export default function App() {
           <span className="mark">
             t<span>_</span>
           </span>
-          typeahead<span className="version">01</span>
+          typeahead<span className="version">02</span>
         </a>
         <div className="connection">
           <i className={storage === "unavailable" ? "offline" : ""} />
@@ -168,7 +186,14 @@ export default function App() {
               maxLength={64}
               onChange={(e) => change(e.target.value)}
               onFocus={() => setOpen(true)}
-              onBlur={() => setOpen(false)}
+              onBlur={(event) => {
+                if (
+                  !event.currentTarget
+                    .closest(".search-area")
+                    .contains(event.relatedTarget)
+                )
+                  setOpen(false);
+              }}
               onKeyDown={onKey}
             />
             {query ? (
@@ -186,6 +211,31 @@ export default function App() {
               <kbd>↵</kbd>
             )}
           </div>
+          <div className="search-options">
+            <label>
+              <input
+                type="checkbox"
+                checked={allowTypos}
+                onChange={(event) => {
+                  setAllowTypos(event.target.checked);
+                  setOpen(true);
+                  setSelected(null);
+                }}
+              />{" "}
+              Allow one typo
+            </label>
+            <span>
+              Try{" "}
+              <button
+                onClick={() => {
+                  change("reaxt");
+                  input.current.focus();
+                }}
+              >
+                reaxt ↗
+              </button>
+            </span>
+          </div>
           {open && query.trim() && (
             <div className="dropdown">
               <div className="results-heading">
@@ -196,6 +246,24 @@ export default function App() {
                     : `${items.length} SUGGESTIONS`}
                 <span>↵ to select</span>
               </div>
+              {meta?.search?.strategy === "typo-fallback" &&
+                items.length > 0 && (
+                  <p className="correction">
+                    A small typo? These are the closest matches.
+                  </p>
+                )}
+              {status === "error" && (
+                <button
+                  className="retry-search"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setRetry((n) => n + 1);
+                    input.current.focus();
+                  }}
+                >
+                  Retry search
+                </button>
+              )}
               <ul id="suggestions" role="listbox" aria-label="Suggestions">
                 {items.map((item, i) => (
                   <li
@@ -210,6 +278,9 @@ export default function App() {
                   >
                     <span className="result-icon">↗</span>
                     <span className="result-name">{item.label}</span>
+                    {item.explanation?.matchType === "typo" && (
+                      <span className="typo-badge">1 typo</span>
+                    )}
                     <span className="category">{item.category}</span>
                     <span className="arrow">↵</span>
                   </li>
@@ -252,6 +323,117 @@ export default function App() {
               ))}
             </div>
           )}
+          {meta?.search && (
+            <details
+              className="inspector"
+              onToggle={(event) => {
+                if (event.currentTarget.open) setOpen(false);
+              }}
+            >
+              <summary>
+                Explain this search{" "}
+                <span>
+                  {meta.cache === "hit"
+                    ? "cache hit"
+                    : meta.search.strategy === "typo-fallback"
+                      ? "typo recovery"
+                      : "prefix search"}
+                </span>
+              </summary>
+              <div className="inspector-body">
+                <p className="inspector-intro">
+                  See how your letters became these suggestions.
+                </p>
+                <div className="pipeline">
+                  <span>Normalize</span>
+                  <b>→</b>
+                  <span>{meta.cache === "hit" ? "Cache" : "Retrieve"}</span>
+                  <b>→</b>
+                  <span>Rank</span>
+                  <b>→</b>
+                  <span>Suggest</span>
+                </div>
+                <dl className="search-facts">
+                  <div>
+                    <dt>Candidates considered</dt>
+                    <dd>{meta.search.candidateCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Retrieval</dt>
+                    <dd>{meta.search.retrievalMs} ms</dd>
+                  </div>
+                  <div>
+                    <dt>Ranking</dt>
+                    <dd>{meta.search.rankingMs} ms</dd>
+                  </div>
+                </dl>
+                {meta.cache !== "miss" && (
+                  <p className="inspector-note">
+                    Retrieval and ranking timings describe the original
+                    computation. Current request: {meta.durationMs} ms on the
+                    server.
+                  </p>
+                )}
+                {items.length > 0 && (
+                  <table>
+                    <caption>Why this order?</caption>
+                    <thead>
+                      <tr>
+                        <th>Suggestion</th>
+                        <th>Match</th>
+                        <th>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.label}</td>
+                          <td>
+                            {reasons[item.explanation?.matchType] ||
+                              "Prefix match"}
+                            {item.explanation?.matchType === "typo" && (
+                              <small>
+                                Matched “{item.explanation.matchedPrefix}”
+                              </small>
+                            )}
+                          </td>
+                          <td>{item.score ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+                <p className="inspector-note">
+                  Match quality takes priority. A bounded popularity
+                  contribution breaks ties within each match type. Typo search
+                  runs only when prefix search finds nothing.
+                </p>
+                <div className="trace-heading">
+                  Your last {trace.length} requests{" "}
+                  <span>HTTP round trip · this tab only</span>
+                </div>
+                <ol
+                  className="request-trace"
+                  aria-label="Recent request timings"
+                >
+                  {trace.map((entry, i) => (
+                    <li key={i}>
+                      <span>{entry.query}</span>
+                      <div>
+                        <i
+                          style={{
+                            width: `${Math.max(2, (entry.ms / Math.max(1, ...trace.map((row) => row.ms))) * 100)}%`,
+                          }}
+                        />
+                      </div>
+                      <b>{entry.ms} ms</b>
+                      <small>{entry.cache}</small>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </details>
+          )}
           <p className="sr-only" role="status" aria-live="polite">
             {status === "loading"
               ? "Searching"
@@ -278,7 +460,8 @@ export default function App() {
             <h3>Starts with a spark</h3>
             <p>
               Search by a phrase or a word.
-              <br />A prefix is all you need.
+              <br />
+              Even a typo can find its way.
             </p>
           </div>
           <div>

@@ -122,3 +122,99 @@ it("supports pointer selection and arrow up", async () => {
   fireEvent.click(option);
   expect(screen.getByRole("heading", { name: /React Native/ })).toBeTruthy();
 });
+
+it("can compare strict search with typo recovery and inspect ranking", async () => {
+  const fetch = mockFetch(() =>
+    Promise.resolve({
+      ok: true,
+      json: async () => ({
+        ...payload,
+        query: "reaxt",
+        storage: "mongodb",
+        search: {
+          strategy: "typo-fallback",
+          candidateCount: 3,
+          retrievalMs: 1.2,
+          rankingMs: 0.1,
+        },
+        items: [
+          {
+            id: "1",
+            label: "React",
+            category: "Frontend",
+            score: 22,
+            explanation: {
+              matchType: "typo",
+              matchedPrefix: "react",
+              editDistance: 1,
+            },
+          },
+        ],
+      }),
+    }),
+  );
+  const user = userEvent.setup();
+  render(<App />);
+  const input = screen.getByRole("combobox");
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "reaxt" } });
+  await screen.findByText("A small typo? These are the closest matches.");
+  await user.click(screen.getByText("Explain this search"));
+  expect(screen.getByRole("table", { name: "Why this order?" })).toBeTruthy();
+  expect(screen.getByText("One typo corrected")).toBeTruthy();
+  expect(screen.getByText("Matched “react”")).toBeTruthy();
+  await user.click(screen.getByRole("checkbox", { name: "Allow one typo" }));
+  await waitFor(() =>
+    expect(fetch.mock.calls.some(([url]) => url.includes("fuzzy=false"))).toBe(
+      true,
+    ),
+  );
+});
+it("lets a failed request retry without editing the query", async () => {
+  let failing = true;
+  mockFetch(() =>
+    Promise.resolve(
+      failing ? { ok: false } : { ok: true, json: async () => payload },
+    ),
+  );
+  const user = userEvent.setup();
+  render(<App />);
+  fireEvent.focus(screen.getByRole("combobox"));
+  fireEvent.change(screen.getByRole("combobox"), {
+    target: { value: "react" },
+  });
+  const retry = await screen.findByRole("button", { name: "Retry search" });
+  failing = false;
+  await user.click(retry);
+  await screen.findByRole("option", { name: /React Native/ });
+});
+it("bounds the inspector trace to the last eight successful requests", async () => {
+  mockFetch(() =>
+    Promise.resolve({
+      ok: true,
+      json: async () => ({
+        ...payload,
+        search: {
+          strategy: "prefix",
+          candidateCount: 2,
+          retrievalMs: 1,
+          rankingMs: 0.1,
+        },
+      }),
+    }),
+  );
+  render(<App />);
+  const input = screen.getByRole("combobox");
+  fireEvent.focus(input);
+  for (let i = 0; i < 9; i++) {
+    fireEvent.change(input, { target: { value: `query${i}` } });
+    await screen.findByRole("option", { name: /React Native/ });
+  }
+  expect(screen.getByText("Your last 8 requests")).toBeTruthy();
+  const trace = screen.getByRole("list", {
+    name: "Recent request timings",
+    hidden: true,
+  });
+  expect(trace.children).toHaveLength(8);
+  expect(trace.textContent).not.toContain("query0");
+});
