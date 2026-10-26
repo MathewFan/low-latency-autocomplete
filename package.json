@@ -1,0 +1,39 @@
+{
+  "name": "autocomplete-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "concurrently -k \"node --env-file-if-exists=.env server/index.js\" \"vite --configLoader runner --host 127.0.0.1\"",
+    "build": "vite build --configLoader runner",
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "seed": "node --env-file-if-exists=.env scripts/seed.js",
+    "test": "vitest run --configLoader runner",
+    "test:coverage": "vitest run --configLoader runner --coverage",
+    "benchmark": "node scripts/benchmark.js",
+    "evaluate": "node scripts/evaluate.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "mongodb": "^6.20.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^5.0.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "autocannon": "^8.0.0",
+    "concurrently": "^9.2.1",
+    "jsdom": "^26.1.0",
+    "mongodb-memory-server": "^10.2.3",
+    "prettier": "^3.9.10",
+    "supertest": "^7.1.4",
+    "vite": "^7.1.7",
+    "vitest": "^3.2.4"
+  }
+}
